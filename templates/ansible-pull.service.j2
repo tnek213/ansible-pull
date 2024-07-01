@@ -1,0 +1,23 @@
+[Unit]
+Description=Ansible pull
+
+[Service]
+Type=oneshot
+User={{ user }}
+Group={{ user }}
+Environment=ANSIBLE_HOME={{ ansible_home }}
+Environment=ANSIBLE_CONFIG={{ ansible_config }}
+# Environment=DEFAULT_LOCAL_TMP=/tmp/.ansible # TODO: Remove line if it works with it commented out
+
+ExecStart=/usr/bin/ansible-pull \
+    --become-password-file "{{ become_password_file }}" \
+    --clean \
+    --directory "{{ ansible_home }}" \
+    --inventory "{{ ansible_home }}/inventory.yml" \
+    --only-if-changed \
+    --private-key "{{ ansiblepull_ssh_keyfile }}" \
+    --url {{ ansiblepull_url }} \
+    --vault-password-file "{{ vault_password_file }}"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,122 @@
+- name: Install ansible pull packages
+  hosts: localhost
+  tasks:
+    - name: Full system upgrade
+      community.general.pacman:
+        update_cache: true
+        upgrade: true
+
+    - name: Install sudo, git and openssh
+      community.general.pacman:
+        name:
+          - sudo
+          - git
+          - openssh
+        state: present
+
+- name: Configure ansible pull
+  hosts: localhost
+  tasks:
+    - name: Assert arguments are set
+      ansible.builtin.assert:
+        fail_msg: "arg_vault, arg_key and arg_key_pub must be set"
+        that: arg_vault is defined and arg_key is defined and arg_key_pub is defined
+
+    - name: Load shared variables
+      ansible.builtin.include_vars: "vars.yml"
+
+    - name: Assert running as root
+      ansible.builtin.assert:
+        fail_msg: "This playbook must be run as root"
+        that: ansible_facts['user_uid'] == 0
+
+    - name: Find existing ansible user or create a new one
+      ansible.builtin.shell: |
+          if ! grep -Eo '^ansible[^:]+' /etc/passwd
+          then
+            user="ansible{{ 100000 | random }}"
+            echo "creating user $user" >&2
+            useradd -r -M -d '/' -s /usr/sbin/nologon $user
+            echo "$user"
+          fi
+      changed_when: "'creating' in user_find_or_create.stderr"
+      failed_when: "'ansible' not in user_find_or_create.stdout"
+      register: user_find_or_create
+
+    - name: Set user fact
+      ansible.builtin.set_fact:
+        user: "{{ user_find_or_create.stdout }}"
+
+    - name: Find existing password or create a new one
+      ansible.builtin.set_fact:
+        user_psw: "{{ lookup('password', become_password_file + ' length=128 chars=ascii_letters,digits') }}"
+
+    - name: Set password of user
+      ansible.builtin.command:
+        cmd: chpasswd
+        stdin: "{{ user }}:{{ user_psw }}"
+      changed_when: true
+
+    - name: Add sudo permissions for user
+      community.general.sudoers:
+        name: "{{ user }}"
+        user: "{{ user }}"
+        commands: ALL
+
+    - name: Add github.com fingerprint to system known hosts
+      ansible.builtin.known_hosts:
+        name: github.com
+        path: /etc/ssh/ssh_known_hosts
+        key: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+
+    - name: Add ansible pull service file
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/etc/systemd/system/{{ item | regex_replace('\\.j2$', '') }}"
+        owner: root
+        group: root
+        mode: "644"
+      loop:
+        - ansible-pull.service.j2
+        - ansible-pull.timer
+
+    - name: Enable ansible pull timer
+      # noqa command-instead-of-module
+      ansible.builtin.command:
+        cmd: "systemctl enable ansible-pull.timer"
+        creates: "/etc/systemd/system/timers.target.wants/ansible-pull.timer"
+
+    - name: Add vault password file
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "600"
+      loop:
+        - src: "{{ arg_vault }}"
+          dest: "{{ vault_password_file }}"
+        - src: "{{ arg_key }}"
+          dest: "{{ ansiblepull_ssh_keyfile }}"
+        - src: "{{ arg_key_pub }}"
+          dest: "{{ ansiblepull_ssh_keyfile_pub }}"
+
+    - name: Add ansible configuration file
+      ansible.builtin.template:
+        src: ansible.cfg.j2
+        dest: "{{ ansible_config }}"
+        mode: "000" # is set below
+
+    - name: Set file tree owner and permissions for ansible pull path
+      ansible.builtin.file:
+        dest: "{{ ansiblepull_path }}"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: u=rwX,go=
+        recurse: true
+
+    - name: Set log file permissions
+      ansible.builtin.file:
+        dest: "{{ log_path }}"
+        owner: "root"
+        group: "{{ user }}"
+        mode: "664"
+        state: touch
