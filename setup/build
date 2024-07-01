@@ -1,0 +1,25 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+TEMPLATES="$SCRIPT_DIR/../templates/"
+
+stringify_file() {
+    local output
+    output="$(base64 -w0 <"$1")"
+    printf "%s" "\$(base64 -d <<< \"$output\")"
+}
+
+SSH_KEY="$TEMPLATES/id_ed25519_ansiblepull"
+
+if ! grep -q ANSIBLE_VAULT "$SSH_KEY"; then
+    echo "Error: Key does not seem to be encypted with ansible-vault. Exiting."
+    exit 1
+fi
+
+SSH_PRI_KEY_CONTENT=$(stringify_file "$SSH_KEY")
+SSH_PUB_KEY_CONTENT=$(stringify_file "$SSH_KEY.pub")
+
+for SCRIPT in "$SCRIPT_DIR"/*.sh; do
+    echo "Processing $SCRIPT"
+    sed -E -i.bak "s#^(SSH_PRI_KEY_CONTENT=)(.*)#\1$SSH_PRI_KEY_CONTENT#;s#^(SSH_PUB_KEY_CONTENT=)(.*)#\1$SSH_PUB_KEY_CONTENT#" "$SCRIPT"
+done

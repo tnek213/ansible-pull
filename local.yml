@@ -1,0 +1,6 @@
+- name: Run pulled Ansible playbook
+  hosts: localhost
+  tasks:
+    - name: Just a way to indicate that the playbook is running
+      ansible.builtin.debug:
+        msg: "Running playbook {{ 100000 | random }}"

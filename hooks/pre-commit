@@ -1,0 +1,28 @@
+#!/bin/bash
+
+VAULT_FILE_LIST=".vault_file_list"
+
+set -euo pipefail
+
+vault_count() {
+    # shellcheck disable=SC2016
+    find . \
+        '(' -not -path './.git/*' ')' \
+        '(' -not -path './hooks/*' ')' \
+        -type f \
+        -exec grep -EHIc '!vault|\$ANSIBLE_VAULT' {} ';'    
+}
+
+filter_hits() {
+    grep -E ':[1-9][0-9]*$'
+}
+
+vault_count | filter_hits | sort > "$VAULT_FILE_LIST"
+
+if ! git diff --quiet -- "$VAULT_FILE_LIST"
+then
+    echo "Vault file list obsolete! Update it and commit it with --no-verify!" 1>&2
+    exit 1
+fi
+
+exit 0

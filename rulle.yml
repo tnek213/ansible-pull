@@ -1,0 +1,15 @@
+- name: Hello World
+  hosts: localhost
+  # vars:
+  #   seed: "abcd"
+  tasks:
+    # - name: Calculate management username
+    #   ansible.builtin.debug:
+    #     management_user: "ansible{{ 999999 | random(seed=seed + ansible_hostname if inventory_hostname == 'localhost' else inventory_hostname) }}"
+    - name: Calculate management username
+      ansible.builtin.set_fact:
+        # noqa yaml[line-length]
+        management_user: "ansible{{ (ansible_hostname if inventory_hostname == 'localhost' else inventory_hostname) | hash('sha3_512') }}" # | int(base=16) % 1000000 }}"
+    - name: Show management username
+      ansible.builtin.debug:
+        var: management_user
