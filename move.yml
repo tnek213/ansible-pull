@@ -1,0 +1,26 @@
+---
+- name: Configure ansible pull
+  hosts: localhost
+  tasks:
+      # keep, create one for updating in pull
+    - name: Find existing ansible user or create a new one
+      ansible.builtin.command: grep -Eo '^ansible[^:]+' /etc/passwd
+      register: user_find
+
+    - name: Set user fact
+      ansible.builtin.set_fact:
+        user: "{{ user_find_or_create.stdout }}"
+
+    # keep, create one for updating in pull
+    - name: Find existing ansible user or create a new one
+      ansible.builtin.shell: |
+          if ! grep -Eo '^ansible[^:]+' /etc/passwd
+          then
+            user="ansible{{ 100000 | random }}"
+            echo "creating user $user" >&2
+            useradd -r -M -d '/' -s /usr/sbin/nologon $user
+            echo "$user"
+          fi
+      changed_when: "'creating' in user_find_or_create.stderr"
+      failed_when: "'ansible' not in user_find_or_create.stdout"
+      register: user_find_or_create

@@ -19,7 +19,6 @@
   tasks:
     - name: Assert arguments are set
       ansible.builtin.assert:
-        fail_msg: "arg_vault, arg_key and arg_key_pub must be set"
         that: arg_vault is defined and arg_key is defined and arg_key_pub is defined
 
     - name: Load shared variables
@@ -30,6 +29,7 @@
         fail_msg: "This playbook must be run as root"
         that: ansible_facts['user_uid'] == 0
 
+    # keep, create one for updating in pull
     - name: Find existing ansible user or create a new one
       ansible.builtin.shell: |
           if ! grep -Eo '^ansible[^:]+' /etc/passwd
@@ -47,28 +47,33 @@
       ansible.builtin.set_fact:
         user: "{{ user_find_or_create.stdout }}"
 
+    # keep, create one for updating in pull
     - name: Find existing password or create a new one
       ansible.builtin.set_fact:
         user_psw: "{{ lookup('password', become_password_file + ' length=128 chars=ascii_letters,digits') }}"
 
+    # move
     - name: Set password of user
       ansible.builtin.command:
         cmd: chpasswd
         stdin: "{{ user }}:{{ user_psw }}"
       changed_when: true
 
+    # move
     - name: Add sudo permissions for user
       community.general.sudoers:
         name: "{{ user }}"
         user: "{{ user }}"
         commands: ALL
 
+    # move
     - name: Add github.com fingerprint to system known hosts
       ansible.builtin.known_hosts:
         name: github.com
         path: /etc/ssh/ssh_known_hosts
         key: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
 
+    # move
     - name: Add ansible pull service file
       ansible.builtin.template:
         src: "{{ item }}"
@@ -80,6 +85,7 @@
         - ansible-pull.service.j2
         - ansible-pull.timer
 
+    # move
     - name: Enable ansible pull timer
       # noqa command-instead-of-module
       ansible.builtin.command:
@@ -99,12 +105,14 @@
         - src: "{{ arg_key_pub }}"
           dest: "{{ ansiblepull_ssh_keyfile_pub }}"
 
+    # move
     - name: Add ansible configuration file
       ansible.builtin.template:
         src: ansible.cfg.j2
         dest: "{{ ansible_config }}"
         mode: "000" # is set below
 
+    # move
     - name: Set file tree owner and permissions for ansible pull path
       ansible.builtin.file:
         dest: "{{ ansiblepull_path }}"
@@ -113,6 +121,7 @@
         mode: u=rwX,go=
         recurse: true
 
+    # move
     - name: Set log file permissions
       ansible.builtin.file:
         dest: "{{ log_path }}"
