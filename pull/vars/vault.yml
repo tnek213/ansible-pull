@@ -1,0 +1,3 @@
+---
+seed: "i90jc@lR!WjnP4ipzuFlMdy24!UZsH9qtwB28^AmQ6f*@FLtpvR0w8x8$d5#&$h0kg3F^$LfshIDe9VU5lGg8T09lI&zwN3U0ROo@R$LQ7k$6W2!YsjM7IzmuF%C^lFq"
+vault_management_user: "ansible{{ 100000 | random(seed=inventory_hostname + seed) }}"

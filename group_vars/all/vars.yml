@@ -1,0 +1,1 @@
+management_user: "ansible{{ (vault_seed + ansible_hostname if inventory_hostname == 'localhost' else inventory_hostname) | hash('md5') | int(base=16) % 10000 }}"

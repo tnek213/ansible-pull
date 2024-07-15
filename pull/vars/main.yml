@@ -1,0 +1,2 @@
+---
+management_user: {{ vault_management_user }}
