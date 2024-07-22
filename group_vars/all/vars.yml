@@ -1,5 +1,3 @@
-_host_hash: "{{ vault_seed + (ansible_hostname if inventory_hostname == 'localhost' else inventory_hostname) | hash('sha3_512') }}"
-ansible_user: "ansible{{ _host_hash | int(base=16) % 100000 }}"
-ansible_become_password: "{{ _host_hash | truncate(128) }}"
-pull_mode: True
-push_mode: False
+_host_hash: "{{ vault_seed + (lookup('ansible.builtin.file', '/etc/hostname') if inventory_hostname == 'localhost' else inventory_hostname) | hash('sha3_512') }}"
+ansible_user: "ansible{{ _host_hash | hash('md5') | truncate(4, true, '') | int(base=16) }}"
+ansible_become_password: "{{ _host_hash | truncate(128, true, '') }}"

@@ -1,0 +1,5 @@
+- name: Install openssh server
+  community.general.pacman:
+    name:
+      - openssh
+    state: present

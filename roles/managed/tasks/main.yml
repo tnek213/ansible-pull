@@ -1,0 +1,54 @@
+- name: Assert that either managed_pull or managed_push is true
+  ansible.builtin.assert:
+    fail_msg: "Either managed_pull or managed_push must be true"
+    that: managed_pull or managed_push
+
+- name: Create ansible user
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    create_home: false
+    groups: sudo
+    home: /
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Set password of ansible user
+  ansible.builtin.command:
+    cmd: chpasswd
+    stdin: "{{ ansible_user }}:{{ ansible_become_password }}"
+  changed_when: true
+
+- name: Add sudo permissions for ansible user
+  community.general.sudoers:
+    name: "{{ ansible_user }}"
+    user: "{{ ansible_user }}"
+    commands: ALL
+
+- name: Add github.com fingerprint to system known hosts
+  ansible.builtin.known_hosts:
+    name: github.com
+    path: /etc/ssh/ssh_known_hosts
+    key: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+    state: "{{ 'present' if managed_pull else 'absent' }}"
+# print all dicts in pull.files
+
+- name: Debug pull.files
+  ansible.builtin.debug:
+    var: files
+# 
+- name: Add ansible pull service file
+#   ansible.builtin.template:
+#     src: "{{ item.src }}"
+#     dest: "{{ item.dest }}"
+#     owner: root
+#     group: root
+#     mode: "644"
+#     state: present
+#   loop: "{{ pull.files }}"
+#   when: managed_pull
+# 
+- name: Add ansible pull service file2
+#   ansible.builtin.debug:
+#     msg: "Add ansible pull service file {{ pull }}"
+#   # loop: "{{ pull.files }}"
+#   # when: managed_pull

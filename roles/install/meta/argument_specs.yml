@@ -1,0 +1,8 @@
+argument_specs:
+  main:
+    options:
+      packages:
+        type: "list"
+        elements: "str"
+        required: true
+        description: "A list packages to install."

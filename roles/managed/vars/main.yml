@@ -1,0 +1,22 @@
+---
+ansible:
+  config: "{{ pull.path }}/ansible.cfg"
+  home: "{{ pull.path }}/checkout"
+  logfile: "/var/log/ansible-push.log"
+  vault_password_file: "{{ ansiblepush_path }}/.vault_password"
+
+pull:
+  ansible_home: "{{ pull.path }}/checkout"
+  ssh_keyfile: "{{ pull.path }}/id_ed25519_ansiblepull"
+  ssh_keyfile_pub: "{{ pull.path }}/id_ed25519_ansiblepull.pub"
+  path: "/etc/ansible-pull"
+  ssh:
+    url: "git@github.com:tnek213/ansiblepull.git"
+    keyfile: "{{ pull.path }}/id_ed25519_ansiblepull"
+    keyfile_pub: "{{ pull.path }}/id_ed25519_ansiblepull.pub"
+files:
+  - src: ansible-pull.service.j2
+    dest: "/etc/systemd/system/ansible-pull.service"
+  - src: ansible-pull.timer
+    dest: "/etc/systemd/system/ansible-pull.timer"
+sudo_group: 

@@ -35,17 +35,24 @@ Host github.com
 EOF
 )
 
+if [ -e /tmp/vault ] && [ -n "${DEBUG:-}" ]
+then
+    mv /tmp/vault "$VAULT"
+fi
+
+RETRY=
+
 while true
 do
     if ! [[ -f "$VAULT" && -z $RETRY ]]
     then
         read -rsp "Enter the vault password: " PASSWORD
+        echo "$PASSWORD" > "$VAULT"
     fi
-
-    echo "$PASSWORD" > "$VAULT"
 
     if ansible-vault decrypt "$KEY" --vault-password-file "$VAULT"
     then
+        ( umask 066 && cp "$VAULT" /tmp/vault )
         break
     else
         RETRY=true
