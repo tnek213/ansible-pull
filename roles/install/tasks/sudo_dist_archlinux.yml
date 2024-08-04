@@ -1,5 +1,0 @@
-- name: Install sudo
-  community.general.pacman:
-    name:
-      - sudo
-    state: present

@@ -1,0 +1,24 @@
+- name: Base configuration
+  hosts:
+    - all
+    - localhost
+  vars:
+    base_dist_specifics_order:
+      - "{{['os', ansible_facts['distribution'], ansible_facts['distribution_version'] | replace('.', '_')]}}"
+      - "{{['os', ansible_facts['distribution'], ansible_facts['distribution_major_version']]}}"
+      - "{{['os', ansible_facts['distribution']]}}"
+      - "{{['os_family',  ansible_facts['os_family']]}}"
+  tasks:
+    - set_fact:
+        base_dist_specifics_order: >
+          {{
+            base_dist_specifics_order |
+            map('map', 'trim') |
+            map('map', 'lower') |
+            reject('contains', '') |
+            reject('contains', 'NA') |
+            map('join', '_')
+          }}
+    - group_by:
+        key: "{{ item }}"
+      loop: "{{ base_dist_specifics_order }}"

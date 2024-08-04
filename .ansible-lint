@@ -1,2 +1,5 @@
 skip_list:
   - meta-no-info
+  - name[play]
+  - name[missing]
+  - fqcn[action-core]

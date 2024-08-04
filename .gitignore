@@ -1,3 +1,4 @@
 *.bak
 *password*
 ignored-*
+__pycache__/

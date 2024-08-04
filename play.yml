@@ -1,0 +1,6 @@
+---
+- name: Use custom conditional include plugin
+  hosts: localhost
+  # gather_facts: false
+  tasks:
+    - local.distadapt.foo:

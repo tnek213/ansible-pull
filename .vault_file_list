@@ -1,2 +1,2 @@
-./group_vars/all/vault.yml:1
+./group_vars/xall/vault.yml:1
 ./roles/managed/templates/id_ed25519_ansiblepull:1
